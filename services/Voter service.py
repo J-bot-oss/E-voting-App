@@ -1,4 +1,4 @@
-# Handles voter verification, deactivation, search and password changes.
+# Handles voter verification, deactivation, search, and password changes.
 
 import storage.state as state
 from utils.helpers import hash_password
@@ -11,7 +11,11 @@ def get_all_voters() -> dict:
 
 
 def get_unverified_voters() -> dict:
-    return {voter_id_key: voter for voter_id_key, voter in state.voters.items() if not voter["is_verified"]}
+    return {
+        voter_id: voter
+        for voter_id, voter in state.voters.items()
+        if not voter["is_verified"]
+    }
 
 
 def verify_voter(voter_id: int, verified_by: str):
@@ -36,8 +40,8 @@ def verify_all_voters(verified_by: str):
         return False, "No unverified voters found."
 
     count = 0
-    for voter_id_key in unverified:
-        state.voters[voter_id_key]["is_verified"] = True
+    for voter_id in unverified:
+        state.voters[voter_id]["is_verified"] = True
         count += 1
 
     audit_logger.log("VERIFY_ALL_VOTERS", verified_by, f"Verified {count} voters")
@@ -46,8 +50,6 @@ def verify_all_voters(verified_by: str):
 
 
 def deactivate_voter(voter_id: int, deactivated_by: str):
-    #Deactivate a voter account by ID.
-   
     if voter_id not in state.voters:
         return False, "Voter not found."
 
@@ -58,7 +60,8 @@ def deactivate_voter(voter_id: int, deactivated_by: str):
     voter_name = state.voters[voter_id]["full_name"]
 
     audit_logger.log(
-        "DEACTIVATE_VOTER", deactivated_by,
+        "DEACTIVATE_VOTER",
+        deactivated_by,
         f"Deactivated voter: {voter_name}"
     )
     save_data()
@@ -66,57 +69,54 @@ def deactivate_voter(voter_id: int, deactivated_by: str):
 
 
 def search_voters(search_by: str, search_term) -> list:
-    results = []
-
     if search_by == "name":
-        results = [
-            voter for voter in state.voters.values()
+        return [
+            voter
+            for voter in state.voters.values()
             if search_term.lower() in voter["full_name"].lower()
         ]
 
-    elif search_by == "card":
-        results = [
-            voter for voter in state.voters.values()
+    if search_by == "card":
+        return [
+            voter
+            for voter in state.voters.values()
             if search_term == voter["voter_card_number"]
         ]
 
-    elif search_by == "national_id":
-        results = [
-            voter for voter in state.voters.values()
+    if search_by == "national_id":
+        return [
+            voter
+            for voter in state.voters.values()
             if search_term == voter["national_id"]
         ]
 
-    elif search_by == "station":
-        results = [
-            voter for voter in state.voters.values()
+    if search_by == "station":
+        return [
+            voter
+            for voter in state.voters.values()
             if voter["station_id"] == search_term
         ]
 
-    return results
+    return []
 
 
 def change_voter_password(voter_id: int, old_password: str, new_password: str):
-    #Change a voter's password after verifying the old one.
-   
     if voter_id not in state.voters:
         return False, "Voter not found."
 
     voter = state.voters[voter_id]
 
-    # Verify old password
     if hash_password(old_password) != voter["password"]:
         return False, "Incorrect current password."
 
-    # Validate new password length
     if len(new_password) < 6:
         return False, "Password must be at least 6 characters."
 
-    # Save new password
-    voter["password"] = hash_password(new_password)
+    new_hashed_password = hash_password(new_password)
+    voter["password"] = new_hashed_password
 
-    # Also update current session user if it's the same voter
     if state.current_user and state.current_user.get("id") == voter_id:
-        state.current_user["password"] = hash_password(new_password)
+        state.current_user["password"] = new_hashed_password
 
     audit_logger.log(
         "CHANGE_PASSWORD",
