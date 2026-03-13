@@ -1,28 +1,47 @@
-#This file has code to display the menus
-import os
-import sys
+# This file has code to display the menus.
 
-from Display import (
-    header, subheader, menu_item, prompt, info, error, success, warning,
-    table_header, table_divider, status_badge, masked_input,
-    THEME_ADMIN, THEME_ADMIN_ACCENT, THEME_VOTER, THEME_VOTER_ACCENT,
-    THEME_LOGIN, BOLD, DIM, RESET, GREEN, RED, YELLOW, GRAY,
-    BRIGHT_BLUE, BRIGHT_GREEN, BRIGHT_WHITE, BRIGHT_YELLOW, BRIGHT_CYAN,
-    ITALIC, BG_GREEN, BLACK
+from .Display import (
+    menu_item,
+    status_badge,
+    display_error as error,
+    display_success as success,
+    display_warning as warning,
+    display_info_message as info,
 )
 
-def clear_screen():
-    #Clear the terminal screen.
-    os.system("cls" if os.name == "nt" else "clear")
+from utils.display import (
+    header,
+    subheader,
+    table_header,
+    table_divider,
+    prompt,
+    clear_screen,
+    pause,
+)
 
+from utils.helpers import masked_input
 
-def pause():
-    #Pause execution until the user presses Enter.
-    input(f"\n  {DIM}Press Enter to continue...{RESET}")
+from utils.colors import (
+    THEME_ADMIN,
+    THEME_ADMIN_ACCENT,
+    THEME_VOTER,
+    THEME_VOTER_ACCENT,
+    THEME_LOGIN,
+    BOLD,
+    DIM,
+    RESET,
+    GREEN,
+    RED,
+    YELLOW,
+    GRAY,
+    BRIGHT_BLUE,
+    BRIGHT_YELLOW,
+    BG_GREEN,
+    BLACK,
+)
 
 
 def show_login_menu():
-    #Display the main login menu and return the user's choice.
     clear_screen()
     header("E-VOTING SYSTEM", THEME_LOGIN)
     print()
@@ -35,7 +54,6 @@ def show_login_menu():
 
 
 def show_admin_login_screen():
-    #Display the admin login screen and return the username and password.
     clear_screen()
     header("ADMIN LOGIN", THEME_ADMIN)
     print()
@@ -45,7 +63,6 @@ def show_admin_login_screen():
 
 
 def show_voter_login_screen():
-    #Display the voter login screen and return the voter card number and password.
     clear_screen()
     header("VOTER LOGIN", THEME_VOTER)
     print()
@@ -55,7 +72,6 @@ def show_voter_login_screen():
 
 
 def show_admin_dashboard(current_user):
-    #Display the admin dashboard and return the selected menu option.
     clear_screen()
     header("ADMIN DASHBOARD", THEME_ADMIN)
     print(
@@ -114,7 +130,6 @@ def show_admin_dashboard(current_user):
 
 
 def show_voter_dashboard(current_user, station_name):
-    #Display the voter dashboard and return the selected menu option.
     clear_screen()
     header("VOTER DASHBOARD", THEME_VOTER)
     print(f"  {THEME_VOTER}  ● {RESET}{BOLD}{current_user['full_name']}{RESET}")
@@ -135,7 +150,6 @@ def show_voter_dashboard(current_user, station_name):
 
 
 def show_voter_registration_form(voting_stations):
-    #Display the voter registration form and return the entered details.
     clear_screen()
     header("VOTER REGISTRATION", THEME_VOTER)
     print()
@@ -204,7 +218,6 @@ def show_voter_registration_form(voting_stations):
 
 
 def show_voter_registration_success(voter_card):
-    #Display a successful voter registration message.
     print()
     success("Registration successful!")
     print(f"  {BOLD}Your Voter Card Number: {BRIGHT_YELLOW}{voter_card}{RESET}")
@@ -214,7 +227,6 @@ def show_voter_registration_success(voter_card):
 
 
 def show_candidates_table(candidates):
-    #Display a table of all candidates
     clear_screen()
     header("ALL CANDIDATES", THEME_ADMIN)
 
@@ -248,7 +260,6 @@ def show_candidates_table(candidates):
 
 
 def show_candidate_search_menu():
-    #Display the candidate search options and return the user's choice.
     clear_screen()
     header("SEARCH CANDIDATES", THEME_ADMIN)
     subheader("Search by", THEME_ADMIN_ACCENT)
@@ -260,7 +271,6 @@ def show_candidate_search_menu():
 
 
 def show_stations_table(voting_stations, voters):
-    #Display a table of all voting stations.
     clear_screen()
     header("ALL VOTING STATIONS", THEME_ADMIN)
 
@@ -296,7 +306,6 @@ def show_stations_table(voting_stations, voters):
 
 
 def show_all_polls(polls, candidates):
-    #Display all polls with their positions and assigned candidates.
     clear_screen()
     header("ALL POLLS / ELECTIONS", THEME_ADMIN)
 
@@ -343,7 +352,6 @@ def show_all_polls(polls, candidates):
 
 
 def show_voters_table(voters):
-    #Display a table of all registered voters.
     clear_screen()
     header("ALL REGISTERED VOTERS", THEME_ADMIN)
 
@@ -387,7 +395,6 @@ def show_voters_table(voters):
 
 
 def show_voter_profile(current_user, voting_stations):
-    #Display the currently logged-in voter's full profile.
     clear_screen()
     header("MY PROFILE", THEME_VOTER)
     station_name = voting_stations.get(current_user["station_id"], {}).get(
@@ -431,7 +438,6 @@ def show_results_bar_chart(
     theme_color,
     winner_label="★ WINNER",
 ):
-    #Display poll results using a text-based bar chart.
     for position in poll["positions"]:
         max_winners = position.get("max_winners", 1)
         subheader(
@@ -498,7 +504,6 @@ def show_results_bar_chart(
 
 
 def show_admins_table(admins):
-    #Display a table of all admin accounts.
     clear_screen()
     header("ALL ADMIN ACCOUNTS", THEME_ADMIN)
     print()
@@ -524,7 +529,6 @@ def show_admins_table(admins):
 
 
 def show_audit_log_menu():
-    #Display audit log filter options and return the user's choice.
     clear_screen()
     header("AUDIT LOG", THEME_ADMIN)
     subheader("Filter", THEME_ADMIN_ACCENT)
@@ -536,7 +540,6 @@ def show_audit_log_menu():
 
 
 def show_audit_entries(entries):
-    #Display a formatted table of audit log entries.
     print()
     table_header(
         f"{'Timestamp':<22} {'Action':<25} {'User':<20} {'Details'}",
