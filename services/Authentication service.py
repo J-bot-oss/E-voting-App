@@ -1,67 +1,65 @@
 # Handles all login, logout, and voter registration logic.
 
 import storage.state as state
-from models.voter import Voter
-from utils.helpers import hash_password, generate_voter_card_number, calculate_age, current_timestamp
+from utils.helpers import (
+    hash_password,
+    generate_voter_card_number,
+    calculate_age,
+    current_timestamp,
+)
 from utils.logger import audit_logger
 from storage.store import save_data
-from utils.constants import MIN_VOTER_AGE
+from utils.constants import MIN_VOTER_AGE, VALID_GENDERS
 
 
 def login_admin(username: str, password: str):
+    """Authenticate an admin user."""
     hashed = hash_password(password)
 
-    for admin_id_key, admin in state.admins.items():
+    for admin in state.admins.values():
         if admin["username"] == username and admin["password"] == hashed:
-
-            # Check if the account is active
             if not admin["is_active"]:
                 audit_logger.log("LOGIN_FAILED", username, "Account deactivated")
                 return None, "deactivated"
 
-            # Successful login
             state.current_user = admin
             state.current_role = "admin"
             audit_logger.log("LOGIN", username, "Admin login successful")
             return admin, "success"
 
-    # No matching admin found
     audit_logger.log("LOGIN_FAILED", username, "Invalid admin credentials")
     return None, "invalid"
 
 
 def login_voter(voter_card: str, password: str):
+    """Authenticate a voter."""
     hashed = hash_password(password)
 
-    for voter_id_key, voter in state.voters.items():
+    for voter in state.voters.values():
         if voter["voter_card_number"] == voter_card and voter["password"] == hashed:
-
-            # Check if the account is active
             if not voter["is_active"]:
                 audit_logger.log("LOGIN_FAILED", voter_card, "Voter account deactivated")
                 return None, "deactivated"
 
-            # Check if the voter has been verified by admin
             if not voter["is_verified"]:
                 audit_logger.log("LOGIN_FAILED", voter_card, "Voter not verified")
                 return None, "unverified"
 
-            # Successful login
             state.current_user = voter
             state.current_role = "voter"
             audit_logger.log("LOGIN", voter_card, "Voter login successful")
             return voter, "success"
 
-    # No matching voter found
     audit_logger.log("LOGIN_FAILED", voter_card, "Invalid voter credentials")
     return None, "invalid"
 
 
 def logout():
-    #Log out the current user by clearing the session.
+    """Log out the current user and save data."""
     if state.current_user:
         user_id = state.current_user.get(
-            "username", state.current_user.get("voter_card_number", "unknown")
+            "username",
+            state.current_user.get("voter_card_number", "unknown"),
         )
         audit_logger.log("LOGOUT", user_id, f"{state.current_role} logged out")
 
@@ -71,25 +69,21 @@ def logout():
 
 
 def register_voter(form_data: dict):
-    #Register a new voter using data collected from the registration form.
-    global state
+    """Register a new voter using form input."""
+    full_name = form_data["full_name"]
+    national_id = form_data["national_id"]
+    dob_str = form_data["dob_str"]
+    gender = form_data["gender"]
+    address = form_data["address"]
+    phone = form_data["phone"]
+    email = form_data["email"]
+    password = form_data["password"]
+    station_id = form_data["station_choice"]
 
-    full_name    = form_data["full_name"]
-    national_id  = form_data["national_id"]
-    dob_str      = form_data["dob_str"]
-    gender       = form_data["gender"]
-    address      = form_data["address"]
-    phone        = form_data["phone"]
-    email        = form_data["email"]
-    password     = form_data["password"]
-    station_id   = form_data["station_choice"]
-
-    # Check that national ID is not already registered
-    for voter_id_key, voter in state.voters.items():
+    for voter in state.voters.values():
         if voter["national_id"] == national_id:
             return False, "A voter with this National ID already exists.", None
 
-    # Validate date of birth and age
     try:
         age = calculate_age(dob_str)
     except ValueError:
@@ -98,35 +92,35 @@ def register_voter(form_data: dict):
     if age < MIN_VOTER_AGE:
         return False, f"You must be at least {MIN_VOTER_AGE} years old to register.", None
 
-    # Validate gender
-    if gender not in ["M", "F", "OTHER"]:
+    if gender not in VALID_GENDERS:
         return False, "Invalid gender selection.", None
 
-    # Validate station selection
-    if station_id not in state.voting_stations or not state.voting_stations[station_id]["is_active"]:
+    if station_id not in state.voting_stations:
         return False, "Invalid station selection.", None
 
-    # Generate voter card and save voter
+    if not state.voting_stations[station_id]["is_active"]:
+        return False, "Invalid station selection.", None
+
     voter_card = generate_voter_card_number()
 
     state.voters[state.voter_id_counter] = {
-        "id":               state.voter_id_counter,
-        "full_name":        full_name,
-        "national_id":      national_id,
-        "date_of_birth":    dob_str,
-        "age":              age,
-        "gender":           gender,
-        "address":          address,
-        "phone":            phone,
-        "email":            email,
-        "password":         hash_password(password),
+        "id": state.voter_id_counter,
+        "full_name": full_name,
+        "national_id": national_id,
+        "date_of_birth": dob_str,
+        "age": age,
+        "gender": gender,
+        "address": address,
+        "phone": phone,
+        "email": email,
+        "password": hash_password(password),
         "voter_card_number": voter_card,
-        "station_id":       station_id,
-        "is_verified":      False,
-        "is_active":        True,
-        "has_voted_in":     [],
-        "registered_at":    current_timestamp(),
-        "role":             "voter",
+        "station_id": station_id,
+        "is_verified": False,
+        "is_active": True,
+        "has_voted_in": [],
+        "registered_at": current_timestamp(),
+        "role": "voter",
     }
 
     audit_logger.log("REGISTER", full_name, f"New voter registered with card: {voter_card}")
