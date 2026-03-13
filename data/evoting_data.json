@@ -57,6 +57,18 @@
       "action": "LOGOUT",
       "user": "admin",
       "details": "Admin logged out"
+    },
+    {
+      "timestamp": "2026-03-13T20:56:12.126351",
+      "action": "LOGIN",
+      "user": "admin",
+      "details": "Admin login successful"
+    },
+    {
+      "timestamp": "2026-03-13T20:58:35.940130",
+      "action": "LOGOUT",
+      "user": "admin",
+      "details": "admin logged out"
     }
   ]
 }
